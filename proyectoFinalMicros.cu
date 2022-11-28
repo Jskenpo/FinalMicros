@@ -12,6 +12,8 @@
 
 using namespace std;    
 
+
+//Subrutina (kernel)
 __global__ void calculosLuminosidad(float *lB, float *lM, float* lA, float* lR)
 {
     int myID = blockIdx.x * blockDim.x + threadIdx.x;
@@ -28,6 +30,8 @@ int main(int argc, char** argv)
 
     int size = sizeof(float) * N;
 
+    //reservación de memoria en el Host
+
     float* hst_luminosidadBaja = (float *)malloc(size);
     float* hst_bpmBaja = (float *)malloc(size);
     float* hst_luminosidadMedia = (float *)malloc(size);
@@ -38,6 +42,7 @@ int main(int argc, char** argv)
     float* hst_res2 = (float *)malloc(size);
     
     
+    //acomodar los vectores de tamaño variable en el device, mem. de GPU
     float *dev_luminosidadBaja,  *dev_luminosidadMedia, *dev_luminosidadAlta, *dev_res;
     cudaMalloc((void **)&dev_luminosidadBaja, size);
     cudaMalloc((void **)&dev_luminosidadMedia, size);
@@ -50,9 +55,11 @@ int main(int argc, char** argv)
     cudaMalloc((void **)&dev_bpmAlta, size);
     cudaMalloc((void **)&dev_res2, size);
 
+    //leer los datos de los archivos
     string linea;        
     string luminosidadBaja, bpmBaja, luminosidadMedia, bpmMedia, luminosidadAlta, bpmAlta;    
-                                                               
+
+    //verificación de existencia de archivo                                    
     ifstream archivo ("datosFinales.csv"); 
 
     if (archivo.fail()) {    
@@ -62,6 +69,7 @@ int main(int argc, char** argv)
     
     getline(archivo,linea);                            
 
+    //obtener valores del archivo
     int i = 0;
     while (getline(archivo,linea)) { 
 
@@ -107,7 +115,7 @@ int main(int argc, char** argv)
 
     archivo.close();    
     
-
+    //copiar los datos del host al device
     cudaMemcpy(dev_luminosidadBaja, hst_luminosidadBaja, size, cudaMemcpyHostToDevice);
     cudaMemcpy(dev_luminosidadMedia, hst_luminosidadMedia, size, cudaMemcpyHostToDevice);
     cudaMemcpy(dev_luminosidadAlta, hst_luminosidadAlta, size, cudaMemcpyHostToDevice);
@@ -117,17 +125,20 @@ int main(int argc, char** argv)
     cudaMemcpy(dev_bpmAlta, hst_bpmAlta, size, cudaMemcpyHostToDevice);
 
 
+    //definir dimensiones de Kernel
     int threadsPerBlock = BLOCKSIZE;
     int temp = N + threadsPerBlock - 1;
     int blocksPerGrid = temp / threadsPerBlock;
 
+    //llamar al kernel
     calculosLuminosidad<<<blocksPerGrid, threadsPerBlock>>>(dev_luminosidadBaja, dev_luminosidadMedia, dev_luminosidadAlta, dev_res);
     calculosLuminosidad<<<blocksPerGrid, threadsPerBlock>>>(dev_bpmBaja, dev_bpmMedia, dev_bpmAlta, dev_res2);
 
+    //copiar los resultados del device al host
     cudaMemcpy(hst_res, dev_res, size, cudaMemcpyDeviceToHost);
     cudaMemcpy(hst_res2, dev_res2, size, cudaMemcpyDeviceToHost);
 
-
+    //calculo e impresión de promedio de luminosidad
     float promedio1 = 0.0;
     for(int i = 0; i < N; i++) {
         promedio1 += hst_res[i];
@@ -146,7 +157,7 @@ int main(int argc, char** argv)
 
 
 
-    
+    //calculo e impresión de promedio de bpm
     float promedio2 = 0.0;
     for(int i = 0; i < N; i++) {
         promedio2 += hst_res2[i];
@@ -175,6 +186,7 @@ int main(int argc, char** argv)
     free(hst_bpmAlta);
     free(hst_res);
 
+    //libera memoria del device
     cudaFree(dev_luminosidadBaja);
     cudaFree(dev_luminosidadMedia);
     cudaFree(dev_luminosidadAlta);
