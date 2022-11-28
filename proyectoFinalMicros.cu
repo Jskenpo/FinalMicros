@@ -104,9 +104,6 @@ int main(int argc, char** argv)
         i++;
     }
 
-    for(int i = 0 ; i < N ; i++){
-        cout << hst_luminosidadBaja[i] << endl;
-    }
 
     archivo.close();    
     
@@ -166,7 +163,7 @@ int main(int argc, char** argv)
         cout << "El bpm es alto" << endl;
     }
 
-    cout << "Si sus bpm están fuera de lo normal, lo recomendado es visitar un médico :)" << endl;
+    cout << "Si sus bpm estan fuera de lo normal, lo recomendado es visitar un medico :)" << endl;
 
 
     //libera memoria del host
